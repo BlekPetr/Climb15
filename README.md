@@ -4,7 +4,8 @@ A mobile-first PWA for a guided 15-minute daily home climbing routine, with an o
 
 - **App**: Vite + vanilla TypeScript, no UI framework. Runtime dependency: just the Inter font files (`@fontsource-variable/inter`), self-hosted.
 - **Offline**: hand-written service worker. The build precaches every emitted file, so the app (fonts included) works offline after the first load.
-- **Reminder**: a Cloudflare Worker (`worker/`) with a per-minute cron sends Web Push at your local reminder time. It skips the push if you've already finished that day. As a fallback, Settings can download an `.ics` daily calendar event.
+- **Hosting**: GitHub Pages, built and published by `.github/workflows/pages.yml` on every push to `main`.
+- **Reminder**: Settings downloads an `.ics` file with a daily recurring calendar event at your chosen time. Optional: the Cloudflare Worker in `worker/` adds real Web Push reminders that skip days you've finished (not deployed by default — see the end of Deploy).
 
 ```
 src/engine/   pure logic + unit tests: routine data, timer, history/streaks, .ics
@@ -39,7 +40,21 @@ The routine (`src/engine/routine.ts`) is data. Settings stores an edited copy. `
 
 When the tab was hidden for a while, only the latest missed cue plays, not a burst of stale beeps. Browsers don't run audio for hidden tabs, so beeps only play while the app is open on screen. The Screen Wake Lock keeps it on screen.
 
-## Deploy
+## Deploy (GitHub Pages)
+
+The app is published at `https://<user>.github.io/<repo>/` (here: `https://blekpetr.github.io/Climb15/`).
+
+One-time setup:
+
+1. The repository must be **public** (GitHub Pages on the free plan).
+2. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. Push to `main` (or run the workflow from the **Actions** tab). The workflow runs the tests, builds with `BASE_PATH=/<repo>/` and publishes `dist/`.
+
+To build for another path or host: `BASE_PATH=/some/path/ npm run build`. Without `BASE_PATH`, the app is built for the site root.
+
+## Optional: push reminders with Cloudflare
+
+Not needed for the app. This adds a server that sends a push notification at the reminder time and skips days you've finished. Without it, Settings offers the calendar reminder only.
 
 You need a Cloudflare account. `npx wrangler login` once.
 
@@ -64,7 +79,7 @@ npx wrangler deploy
 
 Note the Worker URL, e.g. `https://climb15-reminder.<you>.workers.dev`. Check it with `curl <url>/config`. Logs: `npx wrangler tail`.
 
-### 3. Deploy the app to Cloudflare Pages
+### 3. Point the app at the Worker (Cloudflare Pages example)
 
 **Git integration** (Pages dashboard → Create → Connect to Git):
 
@@ -86,17 +101,16 @@ npx wrangler pages deploy dist --project-name climb15
 
 ## Install on Android
 
-1. Open the Pages URL in **Chrome** on the phone.
+1. Open `https://blekpetr.github.io/Climb15/` in **Chrome** on the phone.
 2. Tap **Install app** in the banner, or ⋮ → **Add to Home screen** → **Install**.
 3. Open Climb 15 from the home screen. It runs full screen and works offline.
-4. For reminders: **Settings → Reminder time → Enable reminder** and allow notifications. The app asks for permission only at this step, never on launch. Tapping the notification opens the Today screen.
-   - If reminders don't show up, check Android Settings → Apps → Climb 15 (or Chrome) → Notifications. Battery saver can delay pushes.
-   - Alternative: **Add to calendar (.ics)** creates a daily recurring event in your calendar app.
+4. For a daily reminder: **Settings → Reminder time**, then **Add to calendar (.ics)** and open the file with your calendar app. It creates a daily recurring event with a notification.
+   - With the optional Worker deployed, Settings shows **Enable reminder** instead, for push notifications. The app asks for notification permission only at that step, never on launch.
 
 ## Verification
 
 - `npm test`: 40 unit tests (timer engine, cues, streaks, calendar grid, `.ics`, Worker scheduling/VAPID/handlers).
-- Lighthouse 11.7 (the last version with the PWA category) against `npm run preview`: **PWA 100, Performance 100, Accessibility 100, Best Practices 100**. Accessibility is 100 on every screen.
+- Lighthouse 11.7 (the last version with the PWA category) against `npm run preview`, both at the site root and under `/Climb15/`: **PWA 100, Performance 100, Accessibility 100, Best Practices 100**. Accessibility is 100 on every screen.
 - Layout checked at 360×800 with `node scripts/screens.mjs` (needs `npm run preview` running): no horizontal overflow, no console errors.
 - Offline: after the first visit, reloading in airplane mode loads every screen and the font.
 

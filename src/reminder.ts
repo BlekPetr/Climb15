@@ -115,7 +115,7 @@ window.addEventListener('online', () => void flushDone());
 
 export function downloadIcs(): void {
   const { reminderTime } = getSettings();
-  const ics = buildIcs({ time: reminderTime, startDay: dayKey(new Date()), url: location.origin + '/' });
+  const ics = buildIcs({ time: reminderTime, startDay: dayKey(new Date()), url: location.origin + import.meta.env.BASE_URL });
   const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

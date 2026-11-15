@@ -66,7 +66,7 @@ export const settingsScreen: Screen = (root, nav) => {
     const st = pushStatus();
     let push = '';
     if (st === 'unsupported') push = '<p class="muted small">Push notifications aren’t supported in this browser. Use the calendar instead.</p>';
-    else if (st === 'unconfigured') push = '<p class="muted small">Push reminders aren’t configured for this build (no reminder server). Use the calendar instead.</p>';
+    else if (st === 'unconfigured') push = '<p class="muted small">Add a daily event to your calendar — it reminds you at the chosen time.</p>';
     else if (st === 'denied') push = '<p class="muted small">Notifications are blocked for this site. Allow them in the browser’s site settings, or use the calendar.</p>';
     else if (s.reminderEnabled) push = `<p class="status status--done small">Reminder on — daily at <span class="num">${esc(s.reminderTime)}</span>, skipped on days you’re done.</p>
         <button class="btn" id="rem-off" type="button">Turn off reminder</button>`;

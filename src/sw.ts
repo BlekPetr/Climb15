@@ -10,6 +10,8 @@ declare const __PRECACHE__: string[];
 declare const __VERSION__: string;
 
 const CACHE = `climb15-${__VERSION__}`;
+/** The app's base URL, e.g. https://user.github.io/Climb15/ */
+const BASE = self.registration.scope;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,9 +39,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (req.mode === 'navigate') {
-    // App shell: the cached "/" (single-page app with hash routes).
+    // App shell: the cached base URL (single-page app with hash routes).
     event.respondWith(
-      caches.match('/', { cacheName: CACHE, ignoreVary: true }).then((r) => r ?? fetch(req)),
+      caches.match(BASE, { cacheName: CACHE, ignoreVary: true }).then((r) => r ?? fetch(req)),
     );
     return;
   }
@@ -62,17 +64,17 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification('Climb 15', {
       body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/badge-96.png',
+      icon: `${BASE}icons/icon-192.png`,
+      badge: `${BASE}icons/badge-96.png`,
       tag: 'climb15-daily',
-      data: { url: '/#/today' },
+      data: { url: `${BASE}#/today` },
     }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = new URL((event.notification.data as { url?: string })?.url ?? '/#/today', self.location.origin).href;
+  const target = new URL((event.notification.data as { url?: string })?.url ?? `${BASE}#/today`, BASE).href;
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

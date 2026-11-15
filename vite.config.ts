@@ -12,11 +12,13 @@ import pkg from './package.json' with { type: 'json' };
  */
 function serviceWorker(): Plugin {
   let outDir = 'dist';
+  let base = '/';
   return {
     name: 'climb15-sw',
     apply: 'build',
     configResolved(c) {
       outDir = c.build.outDir;
+      base = c.base;
     },
     closeBundle() {
       const files: string[] = [];
@@ -34,9 +36,9 @@ function serviceWorker(): Plugin {
         .filter((u) => u !== '/sw.js' && !u.endsWith('.map') && u !== '/_headers' && u !== '/_redirects')
         .sort();
       for (const u of urls) hash.update(u).update(readFileSync(join(outDir, u)));
-      // Cloudflare Pages 308-redirects /index.html → /, and a redirected
-      // response can't be used for navigations, so cache the shell as "/".
-      const precache = urls.map((u) => (u === '/index.html' ? '/' : u));
+      // Hosts commonly redirect /index.html → / and a redirected response
+      // can't be used for navigations, so cache the shell as the base URL.
+      const precache = urls.map((u) => (u === '/index.html' ? base : base + u.slice(1)));
       const src = readFileSync('src/sw.ts', 'utf8');
       const js = ts.transpileModule(src, {
         compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
@@ -50,6 +52,8 @@ function serviceWorker(): Plugin {
 }
 
 export default defineConfig({
+  // GitHub Pages serves the app from /<repo>/; set BASE_PATH=/Climb15/ there.
+  base: process.env.BASE_PATH || '/',
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   build: { target: 'es2022', assetsInlineLimit: 0 },
   plugins: [serviceWorker()],
